@@ -1,7 +1,7 @@
 # Ignore output files and nifti files 
-out/*
+./out/*
 *.nii
 *.nii.gz
-data/*
+./data/*
 *.mat
 *.log
