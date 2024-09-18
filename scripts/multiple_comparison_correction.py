@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import nibabel as nib
 import numpy as np 
+import os 
 
 dir_maps = Path(sys.argv[1])
 maps_paths = sorted(dir_maps.glob("**/*.nii.gz"))
@@ -57,24 +58,42 @@ def false_discovery_control(ps, *, axis=0, method='bh'):
 for map_path in maps_paths:
     map_volume = nib.load(map_path)
     map = map_volume.get_fdata()
-    task = str(map_path).split("p-value-map_")[1].split(".nii.gz")[0]
+    task = str(map_path).split("_")[-1].split(".nii.gz")[0]
     print(f"### {task} : ")
     
     number_comparisons = np.sum(np.where(map.astype(np.uint8) != 0, 1, 0))
     
     p_values_fwer_correction = np.where(map.astype(np.uint8)*number_comparisons == 0, 1, 0)
     p_values_fwer_correction = (p_values_fwer_correction < 0.05).astype(np.uint8)
-    print(f"\tfwe : {np.sum(p_values_fwer_correction)} voxels survived")
+    print(f"\tBonferroni fwe correction : {np.sum(p_values_fwer_correction)} voxels survived")
     ni_img = nib.Nifti1Image(p_values_fwer_correction, map_volume.affine)
-    nib.save(ni_img, './out/p_value_maps_fwe/p-value-fwer-corrected-map_'+task+'.nii.gz')
+    out = './out/p_value_maps_bonferroni/'
+    if not os.path.exists(out):
+        os.makedirs(out)
+    nib.save(ni_img, os.path.join(out, "p-value-bonferroni-corrected-map_"+task+".nii.gz"))
     
     p_value_map_1d = map.flatten()
-    corrected_p_value_map = false_discovery_control(p_value_map_1d).reshape(map.shape)
+    corrected_p_value_map = false_discovery_control(p_value_map_1d, method='bh').reshape(map.shape)
     p_values_fdr_correction = np.where(corrected_p_value_map == 0, 1, corrected_p_value_map)
     p_values_fdr_correction = (p_values_fdr_correction < 0.05).astype(np.uint8)
-    print(f"\tfdr : {np.sum(p_values_fdr_correction)} voxels survived")
+    print(f"\tBH fdr correction : {np.sum(p_values_fdr_correction)} voxels survived")
     ni_img = nib.Nifti1Image(p_values_fdr_correction, map_volume.affine)
-    nib.save(ni_img, './out/p_value_maps_fdr/p-value-fdr-corrected-map_'+task+'.nii.gz')
+    out = './out/p_value_maps_bh/'
+    if not os.path.exists(out):
+        os.makedirs(out)
+    nib.save(ni_img, os.path.join(out, 'p-value-bh-corrected-map_'+task+'.nii.gz'))
+
+    p_value_map_1d = map.flatten()
+    corrected_p_value_map = false_discovery_control(p_value_map_1d, method='by').reshape(map.shape)
+    p_values_fdr_correction = np.where(corrected_p_value_map == 0, 1, corrected_p_value_map)
+    p_values_fdr_correction = (p_values_fdr_correction < 0.05).astype(np.uint8)
+    print(f"\tBY fdr correction : {np.sum(p_values_fdr_correction)} voxels survived")
+    ni_img = nib.Nifti1Image(p_values_fdr_correction, map_volume.affine)
+    out = './out/p_value_maps_by/'
+    if not os.path.exists(out):
+        os.makedirs(out)
+    nib.save(ni_img, os.path.join(out, 'p-value-by-corrected-map_'+task+'.nii.gz'))
+
 
     
     
