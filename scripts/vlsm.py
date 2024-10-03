@@ -46,17 +46,11 @@ print(f"{number_iter} iterations")
 # fwer = 1-math.pow((1-0.05),comparison_number)
 # print(fwer) 
 
-def t_statistic(x,y):
-    return stats.ttest_ind(x,y).statistic
-
-
 t_start = time.time()
-n=0
 for x in tqdm(range(shape_imgs[0])):
     for y in range(shape_imgs[1]):
         for z in range(shape_imgs[2]):
             if sum_masks[x,y,z]>=2 and sum_masks[x,y,z]<=len(subjects)-2:
-                n+=1
                 for num_task in range(len(tasks)):
                     list_scores_lesion = []
                     list_scores_no_lesion = []
@@ -67,12 +61,12 @@ for x in tqdm(range(shape_imgs[0])):
                         else:
                             list_scores_no_lesion.append(scores[tasks[num_task]].to_list()[i])
                         i+=1
-                    # t, p = stats.ttest_ind(list_scores_lesion, list_scores_no_lesion)                   
-                    r, pvalue_corrected = stats.ttest_ind(list_scores_lesion, list_scores_no_lesion, alternative='less', permutations=1000)
-                    # t_map[num_task, x,y,z] = t
-                    # p_value_map[num_task, x,y,z] = p
-                    t_map_after_permutation[num_task, x,y,z] = r
-                    p_value_map_after_permutation[num_task, x,y,z] = pvalue_corrected
+                    t, p = stats.ttest_ind(list_scores_lesion, list_scores_no_lesion)                   
+                    # r, pvalue_corrected = stats.ttest_ind(list_scores_lesion, list_scores_no_lesion, alternative='less', permutations=1000)
+                    t_map[num_task, x,y,z] = t
+                    p_value_map[num_task, x,y,z] = p
+                    # t_map_after_permutation[num_task, x,y,z] = r
+                    # p_value_map_after_permutation[num_task, x,y,z] = pvalue_corrected
 
 print(f"{time.time() - t_start} seconds")
 
@@ -89,16 +83,16 @@ for num_task in range(len(tasks)):
         os.makedirs(out)
     nib.save(ni_img, os.path.join(out, 'p-value-map_'+tasks[num_task]+'.nii.gz'))
 
-    ni_img = nib.Nifti1Image(t_map_after_permutation[num_task, :,:,:], nib.load(list_masks[0]).affine)
-    out = './out/t-maps-after_permutation/'
-    if not os.path.exists(out):
-        os.makedirs(out)
-    nib.save(ni_img, os.path.join(out, 't-maps-after-permutation_'+tasks[num_task]+'.nii.gz'))
+    # ni_img = nib.Nifti1Image(t_map_after_permutation[num_task, :,:,:], nib.load(list_masks[0]).affine)
+    # out = './out/t-maps-after_permutation/'
+    # if not os.path.exists(out):
+    #     os.makedirs(out)
+    # nib.save(ni_img, os.path.join(out, 't-maps-after-permutation_'+tasks[num_task]+'.nii.gz'))
 
-    ni_img = nib.Nifti1Image(p_value_map_after_permutation[num_task, :,:,:], nib.load(list_masks[0]).affine)
-    out = './out/p-value-maps-after_permutation/'
-    if not os.path.exists(out):
-        os.makedirs(out)
-    nib.save(ni_img, os.path.join(out, 'p-value-maps-after-permutation_'+tasks[num_task]+'.nii.gz'))
+    # ni_img = nib.Nifti1Image(p_value_map_after_permutation[num_task, :,:,:], nib.load(list_masks[0]).affine)
+    # out = './out/p-value-maps-after_permutation/'
+    # if not os.path.exists(out):
+    #     os.makedirs(out)
+    # nib.save(ni_img, os.path.join(out, 'p-value-maps-after-permutation_'+tasks[num_task]+'.nii.gz'))
 
 #'''
